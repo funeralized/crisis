@@ -1,0 +1,14 @@
+{
+  "appId": "com.vault.finance",
+  "appName": "Vault",
+  "webDir": "dist",
+  "bundledWebRuntime": false,
+  "ios": {
+    "contentInset": "always",
+    "scheme": "Vault",
+    "backgroundColor": "#0a0a0b"
+  },
+  "server": {
+    "androidScheme": "https"
+  }
+}
