@@ -4,6 +4,7 @@ import {
   formatCurrency,
   calculateGoalProjection,
   formatDate,
+  renderAppIcon,
 } from '../utils';
 import Button from './ui/Button';
 import ConfirmDialog from './ui/ConfirmDialog';
@@ -107,7 +108,7 @@ export const SavingsGoalCard: React.FC<SavingsGoalCardProps> = ({
                 borderColor: `${goal.color}35`,
               }}
             >
-              <span>{goal.icon || '🎯'}</span>
+              <span style={{ color: goal.color }}>{renderAppIcon(goal.icon, 'w-5 h-5')}</span>
             </div>
 
             <div className="min-w-0">

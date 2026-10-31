@@ -133,7 +133,7 @@ export const sampleTransactions: Transaction[] = [
 export const sampleSavingsGoals: SavingsGoal[] = [
   {
     id: generateId(), name: 'Car Fund', targetAmount: dollarsToCents(4500),
-    currentAmount: dollarsToCents(350), icon: '🚗', color: '#3b82f6',
+    currentAmount: dollarsToCents(350), icon: 'car', color: '#3b82f6',
     targetDate: '2027-06-01',
     description: 'Saving up for a reliable used car',
     contributions: [
@@ -145,7 +145,7 @@ export const sampleSavingsGoals: SavingsGoal[] = [
   },
   {
     id: generateId(), name: 'Moving Out Fund', targetAmount: dollarsToCents(12000),
-    currentAmount: dollarsToCents(800), icon: '🏠', color: '#10b981',
+    currentAmount: dollarsToCents(800), icon: 'home', color: '#10b981',
     targetDate: '2028-01-01',
     description: 'First & last month rent, furniture, essentials',
     contributions: [
@@ -157,7 +157,7 @@ export const sampleSavingsGoals: SavingsGoal[] = [
   },
   {
     id: generateId(), name: 'Business Fund', targetAmount: dollarsToCents(500),
-    currentAmount: dollarsToCents(125), icon: '💼', color: '#8b5cf6',
+    currentAmount: dollarsToCents(125), icon: 'briefcase', color: '#8b5cf6',
     targetDate: '2027-03-01',
     description: 'Startup costs for side business',
     contributions: [
@@ -169,15 +169,15 @@ export const sampleSavingsGoals: SavingsGoal[] = [
 ];
 
 export const sampleBudgetCategories: BudgetCategory[] = [
-  { id: generateId(), name: 'Transportation', limit: dollarsToCents(120), icon: '🚌', color: '#3b82f6', createdAt: new Date().toISOString() },
-  { id: generateId(), name: 'Personal Care', limit: dollarsToCents(80), icon: '💇', color: '#8b5cf6', createdAt: new Date().toISOString() },
-  { id: generateId(), name: 'Subscriptions', limit: dollarsToCents(30), icon: '📱', color: '#ec4899', createdAt: new Date().toISOString() },
-  { id: generateId(), name: 'Food', limit: dollarsToCents(200), icon: '🍕', color: '#f59e0b', createdAt: new Date().toISOString() },
-  { id: generateId(), name: 'Entertainment', limit: dollarsToCents(50), icon: '🎬', color: '#10b981', createdAt: new Date().toISOString() },
-  { id: generateId(), name: 'Shopping', limit: dollarsToCents(100), icon: '🛍️', color: '#ef4444', createdAt: new Date().toISOString() },
-  { id: generateId(), name: 'Education', limit: dollarsToCents(50), icon: '📚', color: '#06b6d4', createdAt: new Date().toISOString() },
-  { id: generateId(), name: 'Business', limit: dollarsToCents(50), icon: '💼', color: '#6366f1', createdAt: new Date().toISOString() },
-  { id: generateId(), name: 'Housing', limit: dollarsToCents(0), icon: '🏠', color: '#f97316', createdAt: new Date().toISOString() },
+  { id: generateId(), name: 'Transportation', limit: dollarsToCents(120), icon: 'car', color: '#3b82f6', createdAt: new Date().toISOString() },
+  { id: generateId(), name: 'Personal Care', limit: dollarsToCents(80), icon: 'sparkles', color: '#8b5cf6', createdAt: new Date().toISOString() },
+  { id: generateId(), name: 'Subscriptions', limit: dollarsToCents(30), icon: 'layers', color: '#ec4899', createdAt: new Date().toISOString() },
+  { id: generateId(), name: 'Food', limit: dollarsToCents(200), icon: 'utensils', color: '#f59e0b', createdAt: new Date().toISOString() },
+  { id: generateId(), name: 'Entertainment', limit: dollarsToCents(50), icon: 'gamepad', color: '#10b981', createdAt: new Date().toISOString() },
+  { id: generateId(), name: 'Shopping', limit: dollarsToCents(100), icon: 'shopping-bag', color: '#ef4444', createdAt: new Date().toISOString() },
+  { id: generateId(), name: 'Education', limit: dollarsToCents(50), icon: 'graduation-cap', color: '#06b6d4', createdAt: new Date().toISOString() },
+  { id: generateId(), name: 'Business', limit: dollarsToCents(50), icon: 'briefcase', color: '#6366f1', createdAt: new Date().toISOString() },
+  { id: generateId(), name: 'Housing', limit: dollarsToCents(0), icon: 'home', color: '#f97316', createdAt: new Date().toISOString() },
 ];
 
 export const sampleIncomeSources: IncomeSource[] = [
@@ -222,7 +222,7 @@ export const defaultDashboardLayout: DashboardLayout = {
     { id: generateId(), type: 'monthly-expenses', title: 'Monthly Expenses', x: 6, y: 0, w: 3, h: 2 },
     { id: generateId(), type: 'savings-rate', title: 'Savings Rate', x: 9, y: 0, w: 3, h: 2 },
     { id: generateId(), type: 'income-vs-expenses', title: 'Income vs Expenses', x: 0, y: 2, w: 6, h: 4, config: { dateRange: 'month', chartType: 'bar' } },
-    { id: generateId(), type: 'spending-pie', title: 'Spending Breakdown', x: 6, y: 2, w: 6, h: 4, config: { chartType: 'pie' } },
+    { id: generateId(), type: 'budget-pie', title: 'Monthly Budget & Remaining', x: 6, y: 2, w: 6, h: 4 },
     { id: generateId(), type: 'recent-transactions', title: 'Recent Transactions', x: 0, y: 6, w: 6, h: 4 },
     { id: generateId(), type: 'budget-progress', title: 'Budget Progress', x: 6, y: 6, w: 6, h: 4 },
     { id: generateId(), type: 'savings-progress', title: 'Savings Goals', x: 0, y: 10, w: 12, h: 3 },

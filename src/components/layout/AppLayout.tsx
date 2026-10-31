@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Menu, Shield } from 'lucide-react';
+import { Menu } from 'lucide-react';
 import Sidebar from './Sidebar';
 import { ToastProvider } from '../ui/Toast';
 
@@ -22,7 +22,7 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
         {/* Main Content Area */}
         <div className="flex-1 flex flex-col min-w-0 lg:pl-[240px] transition-all">
           {/* Mobile Top Navigation Bar */}
-          <header className="lg:hidden sticky top-0 z-30 flex items-center justify-between px-4 h-14 bg-[var(--bg-secondary)]/90 backdrop-blur-md border-b border-[var(--border-primary)] pt-[env(safe-area-inset-top,0px)]">
+          <header className="lg:hidden sticky top-0 z-30 flex items-center justify-between px-4 py-3 bg-[#111113] border-b border-[#27272a] shadow-md pt-[max(0.75rem,env(safe-area-inset-top,0px))]">
             <div className="flex items-center gap-3">
               <button
                 type="button"
@@ -34,11 +34,9 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
               </button>
 
               <div className="flex items-center gap-2">
-                <div className="w-7 h-7 rounded-lg bg-gradient-to-tr from-blue-600 to-indigo-500 flex items-center justify-center text-white shadow-sm">
-                  <Shield className="w-4 h-4 fill-current" />
-                </div>
+                <img src="/icon-192.png" className="w-6 h-6 rounded-md object-contain" alt="Crisis Logo" />
                 <span className="font-bold text-base tracking-tight text-[var(--text-primary)]">
-                  Vault
+                  Crisis
                 </span>
               </div>
             </div>

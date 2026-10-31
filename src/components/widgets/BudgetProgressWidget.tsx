@@ -1,6 +1,6 @@
 import React, { useMemo } from 'react';
 import { useFinance } from '../../store/FinanceContext';
-import { formatCurrency, calculateBudgetUsage, getMonthKey } from '../../utils';
+import { formatCurrency, calculateBudgetUsage, getMonthKey, renderAppIcon } from '../../utils';
 
 export interface BudgetProgressWidgetProps {
   className?: string;
@@ -53,7 +53,7 @@ export const BudgetProgressWidget: React.FC<BudgetProgressWidgetProps> = ({
             {/* Header: Icon, Name, and Amounts */}
             <div className="flex items-center justify-between text-xs">
               <div className="flex items-center gap-2 min-w-0">
-                <span className="text-sm shrink-0">{u.category.icon}</span>
+                <span className="p-1 rounded bg-zinc-800 text-zinc-300 shrink-0">{renderAppIcon(u.category.icon, 'w-3.5 h-3.5')}</span>
                 <span className="font-medium text-zinc-200 truncate">
                   {u.category.name}
                 </span>

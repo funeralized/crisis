@@ -107,26 +107,26 @@ body {
   outline-offset: 2px;
 }
 
-/* ─── Input Styles ───────────────────────────────────────────── */
-input, select, textarea {
-  background: var(--bg-input);
-  border: 1px solid var(--border-primary);
-  color: var(--text-primary);
-  border-radius: var(--radius-md);
-  padding: 8px 12px;
-  font-family: var(--font-sans);
-  font-size: 14px;
-  transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
-}
+@layer base {
+  input, select, textarea {
+    background: var(--bg-input);
+    border: 1px solid var(--border-primary);
+    color: var(--text-primary);
+    border-radius: var(--radius-md);
+    font-family: var(--font-sans);
+    font-size: 14px;
+    transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+  }
 
-input:focus, select:focus, textarea:focus {
-  border-color: var(--accent-blue);
-  box-shadow: 0 0 0 3px var(--accent-blue-dim);
-  outline: none;
-}
+  input:focus, select:focus, textarea:focus {
+    border-color: var(--accent-blue);
+    box-shadow: 0 0 0 3px var(--accent-blue-dim);
+    outline: none;
+  }
 
-input::placeholder, textarea::placeholder {
-  color: var(--text-muted);
+  input::placeholder, textarea::placeholder {
+    color: var(--text-muted);
+  }
 }
 
 /* ─── Button Base ────────────────────────────────────────────── */

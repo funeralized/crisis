@@ -101,6 +101,7 @@ export const SpendingPieChart: React.FC<SpendingPieChartProps> = ({
               ))}
             </Pie>
             <Tooltip
+              cursor={false}
               content={({ active, payload }) => {
                 if (active && payload && payload.length) {
                   const data = payload[0].payload as CategoryPieItem;

@@ -1,81 +1,140 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-  Shield, ChevronRight, ChevronLeft, DollarSign, Briefcase,
-  Target, PiggyBank, Sparkles, Check,
+  Wallet,
+  PiggyBank,
+  Target,
+  Bell,
+  ChevronRight,
+  ChevronLeft,
+  Sparkles,
+  Check,
 } from 'lucide-react';
 import { useFinance } from '../store/FinanceContext';
-import { formatCurrency, centsToDollars, dollarsToCents } from '../utils';
+import {
+  formatCurrency,
+  dollarsToCents,
+  renderAppIcon,
+} from '../utils';
 import { Button } from '../components/ui/Button';
+import { scheduleWeeklyReminder } from '../utils/notifications';
 
 const STEPS = [
   { id: 'welcome', title: 'Welcome' },
-  { id: 'currency', title: 'Currency' },
-  { id: 'balance', title: 'Starting Balance' },
-  { id: 'income', title: 'Income' },
-  { id: 'expenses', title: 'Expenses' },
-  { id: 'goals', title: 'Goals' },
+  { id: 'chequing', title: 'Chequing' },
+  { id: 'savings', title: 'Savings' },
+  { id: 'goal', title: 'Goal' },
   { id: 'ready', title: 'Ready' },
 ];
 
-export default function OnboardingPage() {
-  const { settings, incomeSources, savingsGoals, updateSettings, completeOnboarding } = useFinance();
-  const [currentStep, setCurrentStep] = useState(0);
-  const [startingBalance, setStartingBalance] = useState(String(centsToDollars(settings.startingBalance)));
-  const [currency, setCurrency] = useState(settings.currency);
-  const [isCompleting, setIsCompleting] = useState(false);
-  const [showSpinner, setShowSpinner] = useState(true);
+const PRESET_GOAL_ICONS = [
+  'target',
+  'car',
+  'home',
+  'briefcase',
+  'laptop',
+  'piggy-bank',
+  'graduation-cap',
+  'plane',
+];
 
-  // Initial spinner animation
-  React.useEffect(() => {
-    const t = setTimeout(() => setShowSpinner(false), 1500);
-    return () => clearTimeout(t);
-  }, []);
+const COLOR_OPTIONS = [
+  '#3b82f6', // blue
+  '#10b981', // emerald
+  '#8b5cf6', // purple
+  '#f59e0b', // amber
+  '#ec4899', // pink
+  '#06b6d4', // cyan
+];
+
+export default function OnboardingPage() {
+  const { updateSettings, completeOnboarding, addSavingsGoal } = useFinance();
+  const [currentStep, setCurrentStep] = useState(0);
+
+  // Form State
+  const [chequingBalance, setChequingBalance] = useState<string>('500');
+  const [savingsBalance, setSavingsBalance] = useState<string>('1500');
+
+  // Savings Goal State
+  const [goalName, setGoalName] = useState<string>('Emergency Fund');
+  const [goalTarget, setGoalTarget] = useState<string>('5000');
+  const [goalMonthly, setGoalMonthly] = useState<string>('250');
+  const [goalAlreadySaved, setGoalAlreadySaved] = useState<string>('500');
+  const [goalIcon, setGoalIcon] = useState<string>('target');
+  const [goalColor, setGoalColor] = useState<string>('#10b981');
+
+  // Weekly reminder toggle
+  const [enableWeeklyReminder, setEnableWeeklyReminder] = useState<boolean>(true);
+  const [isCompleting, setIsCompleting] = useState<boolean>(false);
 
   const handleNext = () => {
-    if (currentStep === 1) {
-      updateSettings({ currency, currencySymbol: currency === 'USD' ? '$' : currency === 'EUR' ? '€' : currency === 'GBP' ? '£' : '$' });
-    }
-    if (currentStep === 2) {
-      updateSettings({ startingBalance: dollarsToCents(parseFloat(startingBalance) || 0) });
-    }
     setCurrentStep((s) => Math.min(s + 1, STEPS.length - 1));
   };
 
-  const handleBack = () => setCurrentStep((s) => Math.max(s - 1, 0));
+  const handleBack = () => {
+    setCurrentStep((s) => Math.max(s - 1, 0));
+  };
 
   const handleComplete = async () => {
     setIsCompleting(true);
-    await updateSettings({ startingBalance: dollarsToCents(parseFloat(startingBalance) || 0) });
-    await completeOnboarding();
+    try {
+      const chequingCents = dollarsToCents(parseFloat(chequingBalance) || 0);
+      const savingsCents = dollarsToCents(parseFloat(savingsBalance) || 0);
+      const totalStartingBalance = chequingCents + savingsCents;
+
+      // 1. Save settings
+      await updateSettings({
+        currency: 'CAD',
+        currencySymbol: '$',
+        startingBalance: totalStartingBalance,
+      });
+
+      // 2. Create the initial savings goal
+      const targetCents = dollarsToCents(parseFloat(goalTarget) || 1000);
+      const currentCents = dollarsToCents(parseFloat(goalAlreadySaved) || 0);
+      const monthlyCents = dollarsToCents(parseFloat(goalMonthly) || 100);
+
+      // Estimate target date based on monthly contribution
+      const monthsNeeded = monthlyCents > 0 ? Math.ceil(Math.max(0, targetCents - currentCents) / monthlyCents) : 12;
+      const targetDate = new Date();
+      targetDate.setMonth(targetDate.getMonth() + monthsNeeded);
+
+      await addSavingsGoal({
+        name: goalName.trim() || 'My Savings Goal',
+        targetAmount: targetCents,
+        currentAmount: currentCents,
+        targetDate: targetDate.toISOString().split('T')[0],
+        description: `Monthly savings target: ${formatCurrency(monthlyCents)}/mo`,
+        icon: goalIcon,
+        color: goalColor,
+        isSampleData: false,
+      });
+
+      // 3. Schedule notification if enabled
+      if (enableWeeklyReminder) {
+        await scheduleWeeklyReminder();
+      }
+
+      // 4. Mark onboarding finished
+      await completeOnboarding();
+    } catch (err) {
+      console.error('Error completing onboarding:', err);
+      await completeOnboarding();
+    }
   };
 
-  if (showSpinner) {
-    return (
-      <div className="fixed inset-0 bg-[var(--bg-primary)] flex flex-col items-center justify-center z-50">
-        <div className="relative mb-6">
-          <div className="w-16 h-16 rounded-full border-4 border-[var(--border-primary)] border-t-[var(--accent-blue)] animate-spin" />
-          <div className="absolute inset-0 flex items-center justify-center">
-            <div className="w-8 h-8 rounded-full border-2 border-[var(--border-primary)] border-b-[var(--accent-green)] animate-spin" style={{ animationDirection: 'reverse', animationDuration: '0.6s' }} />
-          </div>
-        </div>
-        <p className="text-[var(--text-secondary)] text-sm animate-pulse">Loading Vault...</p>
-      </div>
-    );
-  }
-
   return (
-    <div className="fixed inset-0 bg-[var(--bg-primary)] flex items-center justify-center p-4 overflow-y-auto">
-      <div className="w-full max-w-lg">
-        {/* Progress bar */}
+    <div className="fixed inset-0 bg-[#0a0a0b] flex items-center justify-center p-4 overflow-y-auto">
+      <div className="w-full max-w-md my-auto">
+        {/* Progress Bar */}
         <div className="flex items-center gap-1.5 mb-8">
           {STEPS.map((_, i) => (
             <div
               key={i}
               className="h-1 flex-1 rounded-full transition-all duration-300"
               style={{
-                background: i <= currentStep ? 'var(--accent-blue)' : 'var(--border-primary)',
-                opacity: i <= currentStep ? 1 : 0.5,
+                background: i <= currentStep ? '#3b82f6' : '#27272a',
+                opacity: i <= currentStep ? 1 : 0.4,
               }}
             />
           ))}
@@ -84,280 +143,386 @@ export default function OnboardingPage() {
         <AnimatePresence mode="wait">
           <motion.div
             key={currentStep}
-            initial={{ opacity: 0, x: 20 }}
-            animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: -20 }}
-            transition={{ duration: 0.25 }}
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -12 }}
+            transition={{ duration: 0.2 }}
+            className="card p-6 bg-[#111113] border border-[#27272a] shadow-2xl rounded-2xl"
           >
-            {/* Step 0: Welcome */}
+            {/* Step 0: Welcome to Crisis */}
             {currentStep === 0 && (
-              <div className="text-center">
-                <div className="w-20 h-20 rounded-2xl bg-gradient-to-tr from-blue-600 to-indigo-500 flex items-center justify-center mx-auto mb-6 shadow-lg">
-                  <Shield className="w-10 h-10 text-white fill-current" />
+              <div className="text-center py-2">
+                <div className="w-20 h-20 rounded-2xl bg-zinc-900 border border-zinc-700/80 p-3 mx-auto mb-5 shadow-xl flex items-center justify-center">
+                  <img src="/icon-192.png" alt="Crisis" className="w-full h-full object-contain rounded-xl" />
                 </div>
-                <h1 className="text-3xl font-bold mb-3 text-[var(--text-primary)]">Welcome to Vault</h1>
-                <p className="text-[var(--text-secondary)] text-base mb-2">Your personal finance operating system.</p>
-                <p className="text-[var(--text-tertiary)] text-sm mb-8">
-                  Track spending, manage budgets, grow savings — all in one place.
-                  Your data stays on this device.
+                <h1 className="text-2xl sm:text-3xl font-extrabold mb-2 text-white tracking-tight">
+                  Welcome to Crisis
+                </h1>
+                <p className="text-zinc-400 text-sm mb-6 leading-relaxed">
+                  Real-time personal finance. Track accounts, monitor monthly budgets, and crush savings goals without clutter.
                 </p>
-                <Button variant="primary" size="lg" onClick={handleNext} icon={<ChevronRight className="w-4 h-4" />}>
-                  Get Started
-                </Button>
-                <button
-                  onClick={handleComplete}
-                  className="block mx-auto mt-4 text-sm text-[var(--text-muted)] hover:text-[var(--text-secondary)] transition-colors cursor-pointer"
+
+                <div className="space-y-3 mb-8 text-left bg-zinc-900/50 p-4 rounded-xl border border-zinc-800">
+                  <div className="flex items-center gap-3 text-xs text-zinc-300">
+                    <span className="w-2 h-2 rounded-full bg-emerald-400 shrink-0" />
+                    <span>Quick 1-minute account balance setup</span>
+                  </div>
+                  <div className="flex items-center gap-3 text-xs text-zinc-300">
+                    <span className="w-2 h-2 rounded-full bg-blue-400 shrink-0" />
+                    <span>Set up your primary savings target</span>
+                  </div>
+                  <div className="flex items-center gap-3 text-xs text-zinc-300">
+                    <span className="w-2 h-2 rounded-full bg-amber-400 shrink-0" />
+                    <span>Weekly check-in reminder so you stay on track</span>
+                  </div>
+                </div>
+
+                <Button
+                  variant="primary"
+                  size="lg"
+                  fullWidth
+                  onClick={handleNext}
+                  rightIcon={<ChevronRight className="w-4 h-4" />}
                 >
-                  Skip setup — use defaults
-                </button>
+                  Start Setup
+                </Button>
               </div>
             )}
 
-            {/* Step 1: Currency */}
+            {/* Step 1: Chequing Account Balance */}
             {currentStep === 1 && (
-              <div>
-                <div className="flex items-center gap-3 mb-6">
-                  <div className="w-10 h-10 rounded-lg bg-[var(--accent-blue-dim)] flex items-center justify-center">
-                    <DollarSign className="w-5 h-5 text-[var(--accent-blue)]" />
+              <div className="space-y-5">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-blue-400">
+                    <Wallet className="w-5 h-5" />
                   </div>
                   <div>
-                    <h2 className="text-xl font-semibold text-[var(--text-primary)]">Currency</h2>
-                    <p className="text-sm text-[var(--text-tertiary)]">Choose your primary currency</p>
+                    <h2 className="text-lg font-bold text-white">Chequing Account</h2>
+                    <p className="text-xs text-zinc-400">How much do you currently have in chequing?</p>
                   </div>
                 </div>
-                <div className="grid grid-cols-2 gap-3 mb-8">
-                  {[
-                    { code: 'CAD', symbol: '$', name: 'Canadian Dollar' },
-                    { code: 'USD', symbol: '$', name: 'US Dollar' },
-                    { code: 'EUR', symbol: '€', name: 'Euro' },
-                    { code: 'GBP', symbol: '£', name: 'British Pound' },
-                  ].map((c) => (
+
+                <div>
+                  <label className="text-xs font-semibold text-zinc-400 uppercase tracking-wider block mb-2">
+                    Current Balance
+                  </label>
+                  <div className="relative">
+                    <span className="absolute left-4 top-1/2 -translate-y-1/2 text-2xl font-bold text-zinc-500">
+                      $
+                    </span>
+                    <input
+                      type="number"
+                      step="0.01"
+                      value={chequingBalance}
+                      onChange={(e) => setChequingBalance(e.target.value)}
+                      style={{ paddingLeft: '36px' }}
+                      className="w-full text-2xl font-bold py-3.5 pr-4 bg-zinc-900 border border-zinc-700/80 rounded-xl text-white focus:border-blue-500 outline-none tabular-nums"
+                      placeholder="0.00"
+                      autoFocus
+                    />
+                  </div>
+                </div>
+
+                {/* Quick Add Pills */}
+                <div className="flex items-center gap-2 flex-wrap">
+                  {[100, 250, 500, 1000].map((amt) => (
                     <button
-                      key={c.code}
-                      onClick={() => setCurrency(c.code)}
-                      className={`p-4 rounded-xl border text-left transition-all cursor-pointer ${
-                        currency === c.code
-                          ? 'border-[var(--accent-blue)] bg-[var(--accent-blue-dim)]'
-                          : 'border-[var(--border-primary)] bg-[var(--bg-card)] hover:border-[var(--border-secondary)]'
-                      }`}
+                      key={amt}
+                      type="button"
+                      onClick={() => setChequingBalance(String(amt))}
+                      className="text-xs px-2.5 py-1.5 rounded-lg bg-zinc-800/80 hover:bg-zinc-700 text-zinc-300 font-medium transition-colors cursor-pointer border border-zinc-700/40"
                     >
-                      <span className="text-2xl font-bold text-[var(--text-primary)]">{c.symbol}</span>
-                      <div className="text-sm text-[var(--text-secondary)] mt-1">{c.code}</div>
-                      <div className="text-xs text-[var(--text-muted)]">{c.name}</div>
+                      ${amt}
                     </button>
                   ))}
                 </div>
+
+                <p className="text-[11px] text-zinc-500 leading-normal">
+                  This represents your daily spending money and cash ready to use.
+                </p>
+
+                <div className="flex items-center justify-between pt-2">
+                  <Button variant="ghost" size="sm" onClick={handleBack} icon={<ChevronLeft className="w-4 h-4" />}>
+                    Back
+                  </Button>
+                  <Button variant="primary" size="sm" onClick={handleNext} rightIcon={<ChevronRight className="w-4 h-4" />}>
+                    Continue
+                  </Button>
+                </div>
               </div>
             )}
 
-            {/* Step 2: Starting Balance */}
+            {/* Step 2: Savings Account Balance */}
             {currentStep === 2 && (
-              <div>
-                <div className="flex items-center gap-3 mb-6">
-                  <div className="w-10 h-10 rounded-lg bg-[var(--accent-green-dim)] flex items-center justify-center">
-                    <DollarSign className="w-5 h-5 text-[var(--accent-green)]" />
+              <div className="space-y-5">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400">
+                    <PiggyBank className="w-5 h-5" />
                   </div>
                   <div>
-                    <h2 className="text-xl font-semibold text-[var(--text-primary)]">Starting Balance</h2>
-                    <p className="text-sm text-[var(--text-tertiary)]">How much do you currently have?</p>
+                    <h2 className="text-lg font-bold text-white">Savings Account</h2>
+                    <p className="text-xs text-zinc-400">How much do you currently have in savings?</p>
                   </div>
                 </div>
-                <div className="relative mb-2">
-                  <span className="absolute left-4 top-1/2 -translate-y-1/2 text-2xl text-[var(--text-muted)]">$</span>
+
+                <div>
+                  <label className="text-xs font-semibold text-zinc-400 uppercase tracking-wider block mb-2">
+                    Current Savings
+                  </label>
+                  <div className="relative">
+                    <span className="absolute left-4 top-1/2 -translate-y-1/2 text-2xl font-bold text-zinc-500">
+                      $
+                    </span>
+                    <input
+                      type="number"
+                      step="0.01"
+                      value={savingsBalance}
+                      onChange={(e) => setSavingsBalance(e.target.value)}
+                      style={{ paddingLeft: '36px' }}
+                      className="w-full text-2xl font-bold py-3.5 pr-4 bg-zinc-900 border border-zinc-700/80 rounded-xl text-white focus:border-emerald-500 outline-none tabular-nums"
+                      placeholder="0.00"
+                      autoFocus
+                    />
+                  </div>
+                </div>
+
+                {/* Quick Add Pills */}
+                <div className="flex items-center gap-2 flex-wrap">
+                  {[500, 1000, 2500, 5000].map((amt) => (
+                    <button
+                      key={amt}
+                      type="button"
+                      onClick={() => setSavingsBalance(String(amt))}
+                      className="text-xs px-2.5 py-1.5 rounded-lg bg-zinc-800/80 hover:bg-zinc-700 text-zinc-300 font-medium transition-colors cursor-pointer border border-zinc-700/40"
+                    >
+                      ${amt.toLocaleString()}
+                    </button>
+                  ))}
+                </div>
+
+                <p className="text-[11px] text-zinc-500 leading-normal">
+                  Your reserve buffer or existing savings stored in bank accounts.
+                </p>
+
+                <div className="flex items-center justify-between pt-2">
+                  <Button variant="ghost" size="sm" onClick={handleBack} icon={<ChevronLeft className="w-4 h-4" />}>
+                    Back
+                  </Button>
+                  <Button variant="primary" size="sm" onClick={handleNext} rightIcon={<ChevronRight className="w-4 h-4" />}>
+                    Continue
+                  </Button>
+                </div>
+              </div>
+            )}
+
+            {/* Step 3: Create What You're Saving For */}
+            {currentStep === 3 && (
+              <div className="space-y-4">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-purple-500/10 border border-purple-500/20 flex items-center justify-center text-purple-400">
+                    <Target className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h2 className="text-lg font-bold text-white">Your Savings Goal</h2>
+                    <p className="text-xs text-zinc-400">What are you working toward?</p>
+                  </div>
+                </div>
+
+                {/* Goal Name */}
+                <div>
+                  <label className="text-xs font-semibold text-zinc-400 uppercase tracking-wider block mb-1.5">
+                    What are you saving for?
+                  </label>
                   <input
-                    type="number"
-                    value={startingBalance}
-                    onChange={(e) => setStartingBalance(e.target.value)}
-                    className="w-full text-3xl font-bold pl-10 pr-4 py-4 bg-[var(--bg-card)] border border-[var(--border-primary)] rounded-xl text-[var(--text-primary)] focus:border-[var(--accent-blue)] focus:ring-2 focus:ring-[var(--accent-blue-dim)] outline-none tabular-nums"
-                    min="0"
-                    step="0.01"
-                    placeholder="0.00"
+                    type="text"
+                    value={goalName}
+                    onChange={(e) => setGoalName(e.target.value)}
+                    placeholder="e.g. Moving Out, Car, Emergency Fund"
+                    className="w-full px-3.5 py-2.5 bg-zinc-900 border border-zinc-700 rounded-xl text-sm font-medium text-white focus:border-purple-500 outline-none"
                   />
                 </div>
-                <p className="text-xs text-[var(--text-muted)] mb-8">
-                  This is your current total across all accounts. You can adjust it later in Settings.
-                </p>
-              </div>
-            )}
 
-            {/* Step 3: Income */}
-            {currentStep === 3 && (
-              <div>
-                <div className="flex items-center gap-3 mb-6">
-                  <div className="w-10 h-10 rounded-lg bg-[var(--accent-green-dim)] flex items-center justify-center">
-                    <Briefcase className="w-5 h-5 text-[var(--accent-green)]" />
-                  </div>
+                {/* Two Column Cost and Monthly Contribution */}
+                <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <h2 className="text-xl font-semibold text-[var(--text-primary)]">Income Sources</h2>
-                    <p className="text-sm text-[var(--text-tertiary)]">We've set up these based on your info</p>
-                  </div>
-                </div>
-                <div className="space-y-3 mb-8">
-                  {incomeSources.map((src) => (
-                    <div key={src.id} className="card p-4">
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <p className="font-medium text-[var(--text-primary)]">{src.name}</p>
-                          <p className="text-sm text-[var(--text-tertiary)] capitalize">{src.type}</p>
-                        </div>
-                        <div className="text-right">
-                          {src.hourlyRate && src.hoursPerWeek && (
-                            <>
-                              <p className="text-sm text-[var(--accent-green)] font-medium">
-                                {formatCurrency(src.hourlyRate)}/hr × {src.hoursPerWeek}hrs
-                              </p>
-                              <p className="text-xs text-[var(--text-muted)]">
-                                ~{formatCurrency(src.hourlyRate * src.hoursPerWeek)}/week
-                              </p>
-                            </>
-                          )}
-                          {!src.hourlyRate && (
-                            <span className="text-xs px-2 py-0.5 bg-[var(--bg-tertiary)] text-[var(--text-muted)] rounded-full">Variable</span>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-                <p className="text-xs text-[var(--text-muted)]">You can edit income sources anytime from the Income page.</p>
-              </div>
-            )}
-
-            {/* Step 4: Expenses */}
-            {currentStep === 4 && (
-              <div>
-                <div className="flex items-center gap-3 mb-6">
-                  <div className="w-10 h-10 rounded-lg bg-[var(--accent-red-dim)] flex items-center justify-center">
-                    <Target className="w-5 h-5 text-[var(--accent-red)]" />
-                  </div>
-                  <div>
-                    <h2 className="text-xl font-semibold text-[var(--text-primary)]">Monthly Expenses</h2>
-                    <p className="text-sm text-[var(--text-tertiary)]">Sample expenses have been added</p>
-                  </div>
-                </div>
-                <div className="space-y-2 mb-8">
-                  {[
-                    { name: 'Bus Pass', amount: 10000, cat: 'Transportation' },
-                    { name: 'Haircut', amount: 6000, cat: 'Personal Care' },
-                    { name: 'Hair Products', amount: 1000, cat: 'Personal Care' },
-                    { name: 'Spotify Premium', amount: 1500, cat: 'Subscriptions' },
-                  ].map((exp) => (
-                    <div key={exp.name} className="flex items-center justify-between py-3 px-4 bg-[var(--bg-card)] rounded-lg border border-[var(--border-primary)]">
-                      <div>
-                        <p className="text-sm font-medium text-[var(--text-primary)]">{exp.name}</p>
-                        <p className="text-xs text-[var(--text-muted)]">{exp.cat}</p>
-                      </div>
-                      <span className="text-sm font-medium text-[var(--accent-red)] tabular-nums">
-                        -{formatCurrency(exp.amount)}
+                    <label className="text-xs font-semibold text-zinc-400 uppercase tracking-wider block mb-1.5">
+                      Total Cost
+                    </label>
+                    <div className="relative">
+                      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm font-semibold text-zinc-500">
+                        $
                       </span>
+                      <input
+                        type="number"
+                        step="0.01"
+                        value={goalTarget}
+                        onChange={(e) => setGoalTarget(e.target.value)}
+                        style={{ paddingLeft: '24px' }}
+                        className="w-full pr-3 py-2 bg-zinc-900 border border-zinc-700 rounded-xl text-sm font-semibold text-white focus:border-purple-500 outline-none tabular-nums"
+                        placeholder="5000"
+                      />
                     </div>
-                  ))}
-                  <div className="flex items-center justify-between pt-3 border-t border-[var(--border-primary)]">
-                    <span className="text-sm text-[var(--text-secondary)]">Total Monthly</span>
-                    <span className="text-sm font-semibold text-[var(--accent-red)] tabular-nums">-{formatCurrency(18500)}</span>
                   </div>
-                </div>
-                <p className="text-xs text-[var(--text-muted)]">
-                  These are sample transactions marked as sample data. You can clear them anytime from Settings.
-                </p>
-              </div>
-            )}
 
-            {/* Step 5: Savings Goals */}
-            {currentStep === 5 && (
-              <div>
-                <div className="flex items-center gap-3 mb-6">
-                  <div className="w-10 h-10 rounded-lg bg-[rgba(139,92,246,0.15)] flex items-center justify-center">
-                    <PiggyBank className="w-5 h-5 text-[var(--accent-purple)]" />
-                  </div>
                   <div>
-                    <h2 className="text-xl font-semibold text-[var(--text-primary)]">Savings Goals</h2>
-                    <p className="text-sm text-[var(--text-tertiary)]">Your financial targets</p>
+                    <label className="text-xs font-semibold text-zinc-400 uppercase tracking-wider block mb-1.5">
+                      Monthly Put In
+                    </label>
+                    <div className="relative">
+                      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm font-semibold text-zinc-500">
+                        $
+                      </span>
+                      <input
+                        type="number"
+                        step="0.01"
+                        value={goalMonthly}
+                        onChange={(e) => setGoalMonthly(e.target.value)}
+                        style={{ paddingLeft: '24px' }}
+                        className="w-full pr-3 py-2 bg-zinc-900 border border-zinc-700 rounded-xl text-sm font-semibold text-white focus:border-purple-500 outline-none tabular-nums"
+                        placeholder="250"
+                      />
+                    </div>
                   </div>
                 </div>
-                <div className="space-y-3 mb-8">
-                  {savingsGoals.map((goal) => {
-                    const pct = goal.targetAmount > 0 ? Math.round((goal.currentAmount / goal.targetAmount) * 100) : 0;
-                    return (
-                      <div key={goal.id} className="card p-4">
-                        <div className="flex items-center justify-between mb-2">
-                          <div className="flex items-center gap-2">
-                            <span className="text-xl">{goal.icon}</span>
-                            <span className="font-medium text-[var(--text-primary)]">{goal.name}</span>
-                          </div>
-                          <span className="text-xs text-[var(--text-muted)]">{pct}%</span>
-                        </div>
-                        <div className="h-2 bg-[var(--bg-tertiary)] rounded-full overflow-hidden mb-2">
-                          <div
-                            className="h-full rounded-full transition-all duration-500"
-                            style={{ width: `${pct}%`, background: goal.color }}
-                          />
-                        </div>
-                        <div className="flex justify-between text-xs">
-                          <span className="text-[var(--text-tertiary)]">{formatCurrency(goal.currentAmount)}</span>
-                          <span className="text-[var(--text-muted)]">{formatCurrency(goal.targetAmount)}</span>
-                        </div>
-                      </div>
-                    );
-                  })}
+
+                {/* Already Saved Amount */}
+                <div>
+                  <label className="text-xs font-semibold text-zinc-400 uppercase tracking-wider block mb-1.5">
+                    How much do you already have saved for it?
+                  </label>
+                  <div className="relative">
+                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm font-semibold text-zinc-500">
+                      $
+                    </span>
+                    <input
+                      type="number"
+                      step="0.01"
+                      value={goalAlreadySaved}
+                      onChange={(e) => setGoalAlreadySaved(e.target.value)}
+                      style={{ paddingLeft: '24px' }}
+                      className="w-full pr-3 py-2 bg-zinc-900 border border-zinc-700 rounded-xl text-sm font-semibold text-white focus:border-purple-500 outline-none tabular-nums"
+                      placeholder="0"
+                    />
+                  </div>
                 </div>
-                <p className="text-xs text-[var(--text-muted)]">
-                  Create unlimited goals with custom targets and track your progress over time.
-                </p>
+
+                {/* Icon Selection (No Emojis) */}
+                <div>
+                  <label className="text-xs font-semibold text-zinc-400 uppercase tracking-wider block mb-1.5">
+                    Icon & Accent Color
+                  </label>
+                  <div className="flex items-center gap-2 mb-2 overflow-x-auto pb-1">
+                    {PRESET_GOAL_ICONS.map((iconKey) => (
+                      <button
+                        key={iconKey}
+                        type="button"
+                        onClick={() => setGoalIcon(iconKey)}
+                        className={`w-9 h-9 rounded-lg flex items-center justify-center shrink-0 border transition-all cursor-pointer ${
+                          goalIcon === iconKey
+                            ? 'bg-purple-500/20 border-purple-500 text-purple-300 shadow-sm'
+                            : 'bg-zinc-800/80 border-zinc-700/60 text-zinc-400 hover:text-white'
+                        }`}
+                      >
+                        {renderAppIcon(iconKey, 'w-4 h-4')}
+                      </button>
+                    ))}
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    {COLOR_OPTIONS.map((c) => (
+                      <button
+                        key={c}
+                        type="button"
+                        onClick={() => setGoalColor(c)}
+                        style={{ backgroundColor: c }}
+                        className={`w-6 h-6 rounded-full transition-transform cursor-pointer ${
+                          goalColor === c ? 'ring-2 ring-white scale-110' : 'opacity-70 hover:opacity-100'
+                        }`}
+                      />
+                    ))}
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-between pt-2">
+                  <Button variant="ghost" size="sm" onClick={handleBack} icon={<ChevronLeft className="w-4 h-4" />}>
+                    Back
+                  </Button>
+                  <Button variant="primary" size="sm" onClick={handleNext} rightIcon={<ChevronRight className="w-4 h-4" />}>
+                    Continue
+                  </Button>
+                </div>
               </div>
             )}
 
-            {/* Step 6: Ready */}
-            {currentStep === 6 && (
-              <div className="text-center">
-                <div className="w-20 h-20 rounded-full bg-[var(--accent-green-dim)] flex items-center justify-center mx-auto mb-6">
-                  <Sparkles className="w-10 h-10 text-[var(--accent-green)]" />
+            {/* Step 4: Notifications & Review */}
+            {currentStep === 4 && (
+              <div className="space-y-5">
+                <div className="text-center py-1">
+                  <div className="w-14 h-14 rounded-full bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center mx-auto mb-3 text-emerald-400">
+                    <Sparkles className="w-7 h-7" />
+                  </div>
+                  <h2 className="text-xl font-bold text-white">You're Ready to Roll</h2>
+                  <p className="text-xs text-zinc-400 mt-1">Here is a quick snapshot of your setup:</p>
                 </div>
-                <h2 className="text-2xl font-bold mb-3 text-[var(--text-primary)]">You're all set!</h2>
-                <p className="text-[var(--text-secondary)] text-sm mb-8">
-                  Your Vault is ready. Start tracking your finances, manage your budget, and grow your savings.
-                </p>
-                <div className="grid grid-cols-2 gap-3 mb-8 text-left">
-                  {[
-                    'Customizable dashboard',
-                    'Transaction tracking',
-                    'Budget management',
-                    'Savings goals',
-                    'Financial reports',
-                    'Data export & backup',
-                  ].map((f) => (
-                    <div key={f} className="flex items-center gap-2 text-sm text-[var(--text-secondary)]">
-                      <Check className="w-4 h-4 text-[var(--accent-green)] flex-shrink-0" />
-                      {f}
+
+                {/* Setup Summary Card */}
+                <div className="p-4 rounded-xl bg-zinc-900/80 border border-zinc-800 space-y-2.5 text-xs">
+                  <div className="flex justify-between items-center">
+                    <span className="text-zinc-400">Chequing Balance:</span>
+                    <span className="font-bold text-white tabular-nums">${parseFloat(chequingBalance || '0').toFixed(2)}</span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-zinc-400">Savings Balance:</span>
+                    <span className="font-bold text-white tabular-nums">${parseFloat(savingsBalance || '0').toFixed(2)}</span>
+                  </div>
+                  <div className="flex justify-between items-center pt-2 border-t border-zinc-800">
+                    <span className="text-zinc-400">Primary Goal:</span>
+                    <span className="font-bold text-purple-400 flex items-center gap-1.5">
+                      {renderAppIcon(goalIcon, 'w-3.5 h-3.5')}
+                      {goalName || 'My Goal'}
+                    </span>
+                  </div>
+                  <div className="flex justify-between items-center text-[11px] text-zinc-500">
+                    <span>Target: ${parseFloat(goalTarget || '0').toFixed(2)}</span>
+                    <span>Saved: ${parseFloat(goalAlreadySaved || '0').toFixed(2)}</span>
+                  </div>
+                </div>
+
+                {/* Weekly Notifications Toggle */}
+                <div className="p-3.5 rounded-xl bg-zinc-900/60 border border-zinc-800 flex items-center justify-between gap-3">
+                  <div className="flex items-center gap-2.5">
+                    <div className="p-2 rounded-lg bg-blue-500/10 text-blue-400">
+                      <Bell className="w-4 h-4" />
                     </div>
-                  ))}
+                    <div>
+                      <h4 className="text-xs font-semibold text-white">Weekly Spending Reminder</h4>
+                      <p className="text-[11px] text-zinc-400">Sunday 7 PM reminder to log spending</p>
+                    </div>
+                  </div>
+                  <input
+                    type="checkbox"
+                    checked={enableWeeklyReminder}
+                    onChange={(e) => setEnableWeeklyReminder(e.target.checked)}
+                    className="w-4 h-4 rounded text-blue-600 focus:ring-blue-500 bg-zinc-800 border-zinc-700 cursor-pointer"
+                  />
                 </div>
-                <Button
-                  variant="success"
-                  size="lg"
-                  fullWidth
-                  onClick={handleComplete}
-                  loading={isCompleting}
-                  icon={<Sparkles className="w-4 h-4" />}
-                >
-                  Open Vault
-                </Button>
+
+                <div className="pt-2">
+                  <Button
+                    variant="success"
+                    size="lg"
+                    fullWidth
+                    loading={isCompleting}
+                    onClick={handleComplete}
+                    icon={<Check className="w-4 h-4" />}
+                  >
+                    Launch Crisis
+                  </Button>
+                </div>
               </div>
             )}
           </motion.div>
         </AnimatePresence>
-
-        {/* Navigation buttons */}
-        {currentStep > 0 && currentStep < 6 && (
-          <div className="flex items-center justify-between mt-8">
-            <Button variant="ghost" onClick={handleBack} icon={<ChevronLeft className="w-4 h-4" />}>
-              Back
-            </Button>
-            <Button variant="primary" onClick={handleNext} icon={<ChevronRight className="w-4 h-4" />}>
-              Continue
-            </Button>
-          </div>
-        )}
       </div>
     </div>
   );

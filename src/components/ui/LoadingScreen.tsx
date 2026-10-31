@@ -1,6 +1,5 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { Shield } from 'lucide-react';
 
 export interface LoadingScreenProps {
   message?: string;
@@ -9,7 +8,7 @@ export interface LoadingScreenProps {
 
 export const LoadingScreen: React.FC<LoadingScreenProps> = ({
   message = 'Loading your financial data...',
-  appName = 'Vault',
+  appName = 'Crisis',
 }) => {
   return (
     <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-[var(--bg-primary)] px-4">
@@ -31,8 +30,8 @@ export const LoadingScreen: React.FC<LoadingScreenProps> = ({
           <div className="absolute inset-2 rounded-full bg-[var(--accent-blue-dim)] animate-pulse" />
 
           {/* Logo icon */}
-          <div className="w-10 h-10 rounded-xl bg-[var(--bg-card)] border border-[var(--border-primary)] flex items-center justify-center text-[var(--accent-blue)] shadow-md">
-            <Shield className="w-5 h-5 fill-current" />
+          <div className="w-10 h-10 rounded-xl bg-[var(--bg-card)] border border-[var(--border-primary)] flex items-center justify-center shadow-md overflow-hidden">
+            <img src="/icon-192.png" className="w-7 h-7 object-contain" alt="Crisis" />
           </div>
         </div>
 

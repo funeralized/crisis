@@ -126,6 +126,7 @@ export const WeeklyTrendsChart: React.FC<WeeklyTrendsChartProps> = ({
               }
             />
             <Tooltip
+              cursor={false}
               content={({ active, payload }) => {
                 if (active && payload && payload.length) {
                   const item = payload[0].payload as DaySpendingPoint;

@@ -94,6 +94,7 @@ export type WidgetType =
   | 'upcoming-bills'
   | 'savings-goal-card'
   | 'budget-progress'
+  | 'budget-pie'
   | 'monthly-comparison'
   | 'savings-rate'
   | 'cash-flow'

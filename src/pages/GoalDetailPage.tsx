@@ -7,6 +7,7 @@ import {
   formatDate,
   formatDateShort,
   calculateGoalProjection,
+  renderAppIcon,
 } from '../utils';
 import Button from '../components/ui/Button';
 import EmptyState from '../components/ui/EmptyState';
@@ -244,13 +245,14 @@ export const GoalDetailPage: React.FC = () => {
           <div className="space-y-4 max-w-xl">
             <div className="flex items-center gap-3">
               <div
-                className="w-16 h-16 rounded-2xl flex items-center justify-center text-3xl shrink-0 border shadow-lg"
+                className="w-16 h-16 rounded-2xl flex items-center justify-center shrink-0 border shadow-lg"
                 style={{
                   backgroundColor: `${goal.color}20`,
                   borderColor: `${goal.color}40`,
+                  color: goal.color,
                 }}
               >
-                <span>{goal.icon || '🎯'}</span>
+                {renderAppIcon(goal.icon, 'w-8 h-8')}
               </div>
               <div>
                 <div className="flex items-center gap-2.5 flex-wrap">

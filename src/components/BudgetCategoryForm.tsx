@@ -6,6 +6,7 @@ import {
   dollarsToCents,
   DEFAULT_EXPENSE_CATEGORIES,
   CATEGORY_COLORS,
+  renderAppIcon,
 } from '../utils';
 import Modal from './ui/Modal';
 import Button from './ui/Button';
@@ -18,8 +19,9 @@ export interface BudgetCategoryFormProps {
 }
 
 const CATEGORY_ICONS = [
-  '🍔', '🛒', '🚗', '🏠', '🎬', '💡', '✈️', '💊', '📚', '☕',
-  '📱', '🎁', '🏋️', '🐾', '💈', '⚡', '👕', '🎮', '💼', '🔧',
+  'utensils', 'shopping-bag', 'car', 'home', 'gamepad', 'layers',
+  'plane', 'shield', 'graduation-cap', 'target', 'smartphone',
+  'sparkles', 'briefcase', 'wallet', 'camera', 'laptop',
 ];
 
 const PRESET_COLORS = [
@@ -215,23 +217,26 @@ export const BudgetCategoryForm: React.FC<BudgetCategoryFormProps> = ({
 
         {/* Icon Picker */}
         <div>
-          <label className="block text-xs font-semibold text-[var(--text-secondary)] uppercase tracking-wider mb-1.5 flex items-center justify-between">
+          <label className="text-xs font-semibold text-[var(--text-secondary)] uppercase tracking-wider mb-1.5 flex items-center justify-between">
             <span>Select Icon</span>
-            <span className="text-base">{icon}</span>
+            <span className="p-1 rounded bg-[var(--bg-elevated)] text-[var(--accent-blue)]">
+              {renderAppIcon(icon, 'w-4 h-4')}
+            </span>
           </label>
-          <div className="grid grid-cols-10 gap-1.5 p-2 bg-[var(--bg-tertiary)] rounded-lg border border-[var(--border-subtle)] max-h-28 overflow-y-auto">
-            {CATEGORY_ICONS.map((emoji) => (
+          <div className="grid grid-cols-8 gap-1.5 p-2 bg-[var(--bg-tertiary)] rounded-lg border border-[var(--border-subtle)] max-h-32 overflow-y-auto">
+            {CATEGORY_ICONS.map((iconName) => (
               <button
-                key={emoji}
+                key={iconName}
                 type="button"
-                onClick={() => setIcon(emoji)}
-                className={`w-8 h-8 flex items-center justify-center text-lg rounded-md transition-all ${
-                  icon === emoji
-                    ? 'bg-[var(--accent-blue-dim)] border border-[var(--accent-blue)] scale-110 shadow-sm'
-                    : 'hover:bg-[var(--bg-card)]'
+                onClick={() => setIcon(iconName)}
+                className={`w-8 h-8 flex items-center justify-center rounded-md transition-all cursor-pointer ${
+                  icon === iconName
+                    ? 'bg-[var(--accent-blue-dim)] text-[var(--accent-blue)] border border-[var(--accent-blue)] scale-105 shadow-sm'
+                    : 'text-[var(--text-secondary)] hover:bg-[var(--bg-card)] hover:text-white'
                 }`}
+                title={iconName}
               >
-                {emoji}
+                {renderAppIcon(iconName, 'w-4 h-4')}
               </button>
             ))}
           </div>

@@ -9,7 +9,6 @@ import {
   BarChart3,
   Settings,
   Download,
-  Shield,
   X,
   Loader2,
   CheckCircle2,
@@ -96,15 +95,13 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
               onClick={onClose}
               className="flex items-center gap-3 group select-none"
             >
-              <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-blue-600 to-indigo-500 flex items-center justify-center text-white shadow-md shadow-blue-500/20 group-hover:scale-105 transition-transform">
-                <Shield className="w-5 h-5 fill-current" />
-              </div>
+              <img src="/icon-192.png" className="w-8 h-8 rounded-lg shadow-md group-hover:scale-105 transition-transform object-contain" alt="Crisis" />
               <div className="flex flex-col">
                 <span className="font-bold text-base tracking-tight text-[var(--text-primary)]">
-                  Vault
+                  Crisis
                 </span>
                 <span className="text-[10px] uppercase tracking-wider text-[var(--accent-blue)] font-semibold -mt-0.5">
-                  Personal Finance
+                  Finance OS
                 </span>
               </div>
             </NavLink>

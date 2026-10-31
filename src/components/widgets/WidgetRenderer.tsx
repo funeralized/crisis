@@ -23,6 +23,7 @@ import BudgetVsActualChart from '../charts/BudgetVsActualChart';
 import StatCard from './StatCard';
 import RecentTransactionsWidget from './RecentTransactionsWidget';
 import BudgetProgressWidget from './BudgetProgressWidget';
+import BudgetPieWidget from './BudgetPieWidget';
 import SavingsGoalsWidget from './SavingsGoalsWidget';
 
 export interface WidgetRendererProps {
@@ -171,6 +172,9 @@ export const WidgetRenderer: React.FC<WidgetRendererProps> = ({
 
       case 'budget-progress':
         return <BudgetProgressWidget />;
+
+      case 'budget-pie':
+        return <BudgetPieWidget />;
 
       case 'savings-progress':
       case 'savings-goal-card':

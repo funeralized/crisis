@@ -126,6 +126,7 @@ export const BudgetVsActualChart: React.FC<BudgetVsActualChartProps> = ({
               width={85}
             />
             <Tooltip
+              cursor={false}
               content={({ active, payload }) => {
                 if (active && payload && payload.length) {
                   const item = payload[0].payload as BudgetChartItem;

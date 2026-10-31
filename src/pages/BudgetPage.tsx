@@ -7,6 +7,7 @@ import {
   getMonthName,
   calculateBudgetUsage,
   calculateMonthlyExpenses,
+  renderAppIcon,
 } from '../utils';
 import PageHeader from '../components/layout/PageHeader';
 import Button from '../components/ui/Button';
@@ -455,13 +456,14 @@ export const BudgetPage: React.FC = () => {
                   <div className="flex items-start justify-between gap-3 mb-3">
                     <div className="flex items-center gap-3 min-w-0">
                       <div
-                        className="w-11 h-11 rounded-xl flex items-center justify-center text-xl shrink-0 border"
+                        className="w-11 h-11 rounded-xl flex items-center justify-center shrink-0 border"
                         style={{
                           backgroundColor: `${category.color}15`,
                           borderColor: `${category.color}35`,
+                          color: category.color,
                         }}
                       >
-                        <span>{category.icon || '🏷️'}</span>
+                        {renderAppIcon(category.icon, 'w-5 h-5')}
                       </div>
 
                       <div className="min-w-0">

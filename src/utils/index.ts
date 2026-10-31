@@ -243,9 +243,12 @@ export const CATEGORY_COLORS: Record<string, string> = {
   'Other Income': '#6b7280',
 };
 
+export { renderAppIcon, ICON_OPTIONS } from './iconMap';
+
 export const GOAL_ICONS = [
-  '🚗', '🏠', '💼', '✈️', '📱', '💻', '🎓', '💍', '🏥', '🎯',
-  '💰', '📦', '🎮', '🎸', '📸', '🏋️', '🐕', '👶', '🎄', '⭐',
+  'target', 'car', 'home', 'briefcase', 'plane',
+  'smartphone', 'laptop', 'graduation-cap', 'wallet', 'package',
+  'gamepad', 'camera', 'shield', 'trophy', 'trending-up', 'landmark',
 ];
 
 export const GOAL_COLORS = [

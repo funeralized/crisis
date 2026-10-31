@@ -10,6 +10,7 @@ import {
 import { downloadCSV, sendToGoogleSheets } from '../utils/exportUtils';
 import PageHeader from '../components/ui/PageHeader';
 import Button from '../components/ui/Button';
+import Modal from '../components/ui/Modal';
 import ConfirmDialog from '../components/ui/ConfirmDialog';
 import {
   Settings,
@@ -30,7 +31,17 @@ import {
   HardDrive,
   RefreshCw,
   ExternalLink,
+  Cloud,
+  ShieldCheck,
+  Bell,
+  Key,
 } from 'lucide-react';
+import cloudSync from '../services/cloudSync';
+import {
+  scheduleWeeklyReminder,
+  cancelWeeklyReminder,
+  isWeeklyReminderEnabled,
+} from '../utils/notifications';
 
 const CURRENCY_OPTIONS = [
   { code: 'CAD', symbol: '$', name: 'Canadian Dollar (CAD)' },
@@ -105,6 +116,15 @@ export default function SettingsPage() {
   const [isClearSampleOpen, setIsClearSampleOpen] = useState(false);
   const [isClearAllOpen, setIsClearAllOpen] = useState(false);
   const [isProcessingClear, setIsProcessingClear] = useState(false);
+
+  // Cloud Sync & Notifications State
+  const [cloudKey] = useState<string>(cloudSync.getOrCreateRecoveryCode());
+  const [lastSyncTime, setLastSyncTime] = useState<string | null>(cloudSync.getLastSyncTime());
+  const [isSyncingCloud, setIsSyncingCloud] = useState<boolean>(false);
+  const [isRestoringCloud, setIsRestoringCloud] = useState<boolean>(false);
+  const [restoreInput, setRestoreInput] = useState<string>('');
+  const [isRestoreModalOpen, setIsRestoreModalOpen] = useState<boolean>(false);
+  const [isWeeklyNotif, setIsWeeklyNotif] = useState<boolean>(isWeeklyReminderEnabled());
 
   // Handle Currency change
   const handleCurrencyChange = async (currencyCode: string) => {
@@ -278,6 +298,60 @@ export default function SettingsPage() {
     success('Google Sheets compatible CSV generated.');
   };
 
+  const handleSyncToCloud = async () => {
+    try {
+      setIsSyncingCloud(true);
+      const raw = await exportData();
+      const parsed = JSON.parse(raw);
+      const res = await cloudSync.syncToCloud(parsed);
+      setLastSyncTime(new Date().toISOString());
+      success(res.message);
+    } catch (err: any) {
+      toastError(err?.message || 'Failed to sync to cloud');
+    } finally {
+      setIsSyncingCloud(false);
+    }
+  };
+
+  const handleRestoreFromCloud = async () => {
+    if (!restoreInput.trim()) {
+      toastError('Please enter your Cloud Recovery Key or Email');
+      return;
+    }
+    try {
+      setIsRestoringCloud(true);
+      const payload = await cloudSync.restoreFromCloud(restoreInput.trim());
+      if (!payload) {
+        toastError('No backup found with that key or email. Verify and try again.');
+        return;
+      }
+      await importData(JSON.stringify(payload));
+      setIsRestoreModalOpen(false);
+      setLastSyncTime(new Date().toISOString());
+      success('Database restored successfully from Crisis Cloud!');
+    } catch (err: any) {
+      toastError(err?.message || 'Failed to restore from cloud');
+    } finally {
+      setIsRestoringCloud(false);
+    }
+  };
+
+  const handleToggleWeeklyNotif = async () => {
+    if (isWeeklyNotif) {
+      await cancelWeeklyReminder();
+      setIsWeeklyNotif(false);
+      info('Weekly spending reminder disabled.');
+    } else {
+      const scheduled = await scheduleWeeklyReminder();
+      if (scheduled) {
+        setIsWeeklyNotif(true);
+        success('Weekly reminder set for Sunday at 7:00 PM!');
+      } else {
+        toastError('Please enable notification permissions in iOS settings.');
+      }
+    }
+  };
+
   return (
     <div className="space-y-8 max-w-5xl">
       {/* Header */}
@@ -345,7 +419,101 @@ export default function SettingsPage() {
         </div>
       </section>
 
-      {/* Section B: Data Management */}
+      {/* Section B: Cloud Database & Sideload Protection */}
+      <section className="card p-6 space-y-6">
+        <div className="flex items-center justify-between pb-4 border-b border-[#27272a] flex-wrap gap-2">
+          <div className="flex items-center gap-2.5">
+            <Cloud className="w-5 h-5 text-emerald-400" />
+            <div>
+              <h2 className="text-lg font-bold text-[#fafafa]">Crisis Cloud Sync & Sideload Protection</h2>
+              <p className="text-xs text-[#a1a1aa]">Protects all your data if you re-sign the app after Apple's 7-day sideload limit.</p>
+            </div>
+          </div>
+          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">
+            <ShieldCheck className="w-3.5 h-3.5" />
+            7-Day Expiry Protected
+          </span>
+        </div>
+
+        <div className="p-4 bg-[#18181b] border border-[#27272a] rounded-xl space-y-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div>
+              <span className="text-xs font-semibold text-[#a1a1aa] uppercase tracking-wider block">
+                Your Cloud Recovery Key
+              </span>
+              <div className="flex items-center gap-2 mt-1">
+                <code className="text-base font-mono font-bold text-emerald-400 bg-black/40 px-2.5 py-1 rounded-lg border border-emerald-500/30">
+                  {cloudKey}
+                </code>
+                <button
+                  type="button"
+                  onClick={() => {
+                    navigator.clipboard.writeText(cloudKey);
+                    success('Cloud Recovery Key copied to clipboard!');
+                  }}
+                  className="p-1.5 rounded-lg bg-zinc-800 text-zinc-300 hover:text-white transition-colors cursor-pointer"
+                  title="Copy recovery key"
+                >
+                  <Copy className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <Button
+                variant="primary"
+                size="sm"
+                loading={isSyncingCloud}
+                onClick={handleSyncToCloud}
+                icon={<Cloud className="w-3.5 h-3.5" />}
+              >
+                Sync to Cloud
+              </Button>
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={() => setIsRestoreModalOpen(true)}
+                icon={<RefreshCw className="w-3.5 h-3.5" />}
+              >
+                Restore Key
+              </Button>
+            </div>
+          </div>
+
+          <div className="flex items-center justify-between text-xs text-[#71717a] pt-3 border-t border-[#27272a]">
+            <span>Last Cloud Sync: {lastSyncTime ? new Date(lastSyncTime).toLocaleString() : 'Never'}</span>
+            <span className="text-emerald-400 font-medium">Auto-syncs on backup</span>
+          </div>
+        </div>
+
+        {/* Weekly Notification Toggle Card */}
+        <div className="p-4 bg-[#18181b] border border-[#27272a] rounded-xl flex items-center justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <div className="p-2.5 rounded-xl bg-blue-500/10 text-blue-400 border border-blue-500/20">
+              <Bell className="w-5 h-5" />
+            </div>
+            <div>
+              <h4 className="text-sm font-semibold text-[#fafafa]">Weekly Spending Push Reminder</h4>
+              <p className="text-xs text-[#a1a1aa] mt-0.5">
+                Every Sunday at 7:00 PM, Crisis reminds you to record any cash or card spending to keep budgets accurate.
+              </p>
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={handleToggleWeeklyNotif}
+            className={`px-3 py-1.5 rounded-lg text-xs font-semibold border transition-all cursor-pointer ${
+              isWeeklyNotif
+                ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/40'
+                : 'bg-zinc-800 text-zinc-400 border-zinc-700 hover:text-white'
+            }`}
+          >
+            {isWeeklyNotif ? 'Active (Sunday 7PM)' : 'Disabled (Tap to Enable)'}
+          </button>
+        </div>
+      </section>
+
+      {/* Section C: Data Management */}
       <section className="card p-6 space-y-6">
         <div className="flex items-center gap-2.5 pb-4 border-b border-[#27272a]">
           <Database className="w-5 h-5 text-blue-400" />
@@ -597,7 +765,7 @@ export default function SettingsPage() {
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
           <div className="p-3 bg-[#18181b] border border-[#27272a] rounded-lg">
             <div className="text-[10px] uppercase font-semibold text-[#71717a]">Application</div>
-            <div className="text-sm font-bold text-[#fafafa] mt-1">Vault Finance PWA</div>
+            <div className="text-sm font-bold text-[#fafafa] mt-1">Crisis iOS App</div>
             <div className="text-[11px] text-emerald-400 mt-0.5">v1.0.0 (Production)</div>
           </div>
 
@@ -643,6 +811,54 @@ export default function SettingsPage() {
         isDestructive={true}
         isLoading={isProcessingClear}
       />
+
+      {/* Cloud Restore Modal */}
+      <Modal
+        isOpen={isRestoreModalOpen}
+        onClose={() => setIsRestoreModalOpen(false)}
+        title="Restore from Crisis Cloud"
+        description="Enter your Cloud Recovery Key or registered email to restore all financial records after re-signing."
+      >
+        <div className="space-y-4">
+          <div>
+            <label className="text-xs font-semibold text-zinc-400 uppercase tracking-wider block mb-2">
+              Recovery Key or Email
+            </label>
+            <div className="relative">
+              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500">
+                <Key className="w-4 h-4" />
+              </span>
+              <input
+                type="text"
+                value={restoreInput}
+                onChange={(e) => setRestoreInput(e.target.value)}
+                placeholder="e.g. CRISIS-XXXX-XXXX or your email"
+                style={{ paddingLeft: '32px' }}
+                className="w-full pr-3 py-2.5 bg-zinc-900 border border-zinc-700 rounded-xl text-sm font-mono text-white focus:border-emerald-500 outline-none"
+                autoFocus
+              />
+            </div>
+            <p className="text-[11px] text-zinc-500 mt-1.5 leading-normal">
+              Restoring replaces current local records with the cloud backup snapshot.
+            </p>
+          </div>
+
+          <div className="flex items-center justify-end gap-2 pt-2">
+            <Button variant="ghost" size="sm" onClick={() => setIsRestoreModalOpen(false)}>
+              Cancel
+            </Button>
+            <Button
+              variant="primary"
+              size="sm"
+              loading={isRestoringCloud}
+              onClick={handleRestoreFromCloud}
+              icon={<RefreshCw className="w-4 h-4" />}
+            >
+              Restore Data
+            </Button>
+          </div>
+        </div>
+      </Modal>
     </div>
   );
 }

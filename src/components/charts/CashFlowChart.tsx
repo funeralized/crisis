@@ -105,6 +105,7 @@ export const CashFlowChart: React.FC<CashFlowChartProps> = ({
               }
             />
             <Tooltip
+              cursor={false}
               content={({ active, payload }) => {
                 if (active && payload && payload.length) {
                   const item = payload[0].payload as CashFlowPoint;

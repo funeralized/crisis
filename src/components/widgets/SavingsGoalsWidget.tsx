@@ -1,7 +1,7 @@
 import React from 'react';
 import { Target } from 'lucide-react';
 import { useFinance } from '../../store/FinanceContext';
-import { formatCurrency, formatDateShort } from '../../utils';
+import { formatCurrency, formatDateShort, renderAppIcon } from '../../utils';
 
 export interface SavingsGoalsWidgetProps {
   className?: string;
@@ -38,8 +38,8 @@ export const SavingsGoalsWidget: React.FC<SavingsGoalsWidgetProps> = ({
             {/* Top row: Icon, Name, Target Date & Current/Target */}
             <div className="flex items-center justify-between text-xs">
               <div className="flex items-center gap-2.5 min-w-0">
-                <span className="text-base shrink-0 p-1 rounded-lg bg-zinc-800/80 border border-zinc-700/40">
-                  {goal.icon || '🎯'}
+                <span className="p-1 rounded-lg bg-zinc-800/80 border border-zinc-700/40 text-blue-400 shrink-0">
+                  {renderAppIcon(goal.icon, 'w-3.5 h-3.5')}
                 </span>
                 <div className="min-w-0">
                   <div className="flex items-center gap-2">

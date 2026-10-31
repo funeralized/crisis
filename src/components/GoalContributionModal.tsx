@@ -4,13 +4,13 @@ import { useFinance } from '../store/FinanceContext';
 import {
   formatCurrency,
   dollarsToCents,
+  renderAppIcon,
 } from '../utils';
 import Modal from './ui/Modal';
 import Button from './ui/Button';
 import {
   ArrowDownCircle,
   ArrowUpCircle,
-  DollarSign,
   AlertTriangle,
   CheckCircle2,
   Sparkles,
@@ -138,8 +138,10 @@ export const GoalContributionModal: React.FC<GoalContributionModalProps> = ({
       onClose={onClose}
       title={
         <div className="flex items-center gap-2.5">
-          <span className="text-xl">{goal.icon || '🎯'}</span>
-          <span>
+          <span className="p-1.5 rounded-lg bg-[var(--bg-elevated)] text-[var(--accent-blue)] border border-[var(--border-subtle)]">
+            {renderAppIcon(goal.icon, 'w-4 h-4')}
+          </span>
+          <span className="truncate">
             {type === 'deposit' ? 'Add Funds to' : 'Withdraw Funds from'} {goal.name}
           </span>
         </div>
@@ -156,14 +158,14 @@ export const GoalContributionModal: React.FC<GoalContributionModalProps> = ({
               setType('deposit');
               setError(null);
             }}
-            className={`flex items-center justify-center gap-2 py-2 text-xs font-semibold rounded-md transition-all cursor-pointer ${
+            className={`flex items-center justify-center gap-1.5 py-2 text-xs font-semibold rounded-md transition-all cursor-pointer ${
               type === 'deposit'
                 ? 'bg-emerald-500/20 text-[var(--accent-green)] border border-emerald-500/30 shadow-sm'
                 : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
             }`}
           >
-            <ArrowDownCircle className="w-4 h-4" />
-            <span>Deposit Funds (+)</span>
+            <ArrowDownCircle className="w-4 h-4 shrink-0" />
+            <span>Deposit (+)</span>
           </button>
           <button
             type="button"
@@ -171,14 +173,14 @@ export const GoalContributionModal: React.FC<GoalContributionModalProps> = ({
               setType('withdraw');
               setError(null);
             }}
-            className={`flex items-center justify-center gap-2 py-2 text-xs font-semibold rounded-md transition-all cursor-pointer ${
+            className={`flex items-center justify-center gap-1.5 py-2 text-xs font-semibold rounded-md transition-all cursor-pointer ${
               type === 'withdraw'
                 ? 'bg-red-500/20 text-[var(--accent-red)] border border-red-500/30 shadow-sm'
                 : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
             }`}
           >
-            <ArrowUpCircle className="w-4 h-4" />
-            <span>Withdraw Funds (-)</span>
+            <ArrowUpCircle className="w-4 h-4 shrink-0" />
+            <span>Withdraw (-)</span>
           </button>
         </div>
 
@@ -188,9 +190,9 @@ export const GoalContributionModal: React.FC<GoalContributionModalProps> = ({
             {type === 'deposit' ? 'Deposit Amount' : 'Withdrawal Amount'} <span className="text-[var(--accent-red)]">*</span>
           </label>
           <div className="relative">
-            <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-[var(--text-muted)]">
-              <DollarSign className="w-5 h-5 text-[var(--text-secondary)]" />
-            </div>
+            <span className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-[var(--text-muted)] font-semibold text-sm">
+              $
+            </span>
             <input
               type="number"
               step="0.01"
@@ -201,7 +203,8 @@ export const GoalContributionModal: React.FC<GoalContributionModalProps> = ({
                 setError(null);
               }}
               placeholder="0.00"
-              className="w-full pl-10 pr-4 py-2.5 bg-[var(--bg-input)] border border-[var(--border-primary)] rounded-[var(--radius-md)] text-base font-semibold text-[var(--text-primary)] focus:border-[var(--accent-blue)] tabular-nums"
+              style={{ paddingLeft: '28px' }}
+              className="w-full pr-4 py-2.5 bg-[var(--bg-input)] border border-[var(--border-primary)] rounded-[var(--radius-md)] text-base font-semibold text-[var(--text-primary)] focus:border-[var(--accent-blue)] tabular-nums"
               autoFocus
             />
           </div>

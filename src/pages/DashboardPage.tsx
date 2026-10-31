@@ -64,6 +64,14 @@ const AVAILABLE_WIDGETS: AvailableWidgetDef[] = [
     defaultH: 4,
   },
   {
+    type: 'budget-pie',
+    title: 'Monthly Budget & Remaining',
+    description: 'Pie chart showing what has been spent, category breakdown, and remaining budget',
+    icon: <PieIcon className="w-5 h-5 text-emerald-400" />,
+    defaultW: 6,
+    defaultH: 4,
+  },
+  {
     type: 'spending-pie',
     title: 'Spending Breakdown',
     description: 'Interactive donut breakdown of category spending with legend',

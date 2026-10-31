@@ -127,6 +127,7 @@ export const SavingsTimelineChart: React.FC<SavingsTimelineChartProps> = ({
               }
             />
             <Tooltip
+              cursor={false}
               content={({ active, payload }) => {
                 if (active && payload && payload.length) {
                   const item = payload[0].payload as TimelinePoint;
