@@ -36,7 +36,7 @@ jobs:
       - name: Build Xcode Archive (No Code Signing required for Sideloading)
         run: |
           cd ios/App
-          xcodebuild -resolvePackageDependencies -project App.xcodeproj
+          set -o pipefail
           xcodebuild archive \
             -project App.xcodeproj \
             -scheme App \
@@ -47,7 +47,15 @@ jobs:
             CODE_SIGNING_ALLOWED=NO \
             CODE_SIGNING_REQUIRED=NO \
             CODE_SIGN_IDENTITY="" \
-            COMPILER_INDEX_STORE_ENABLE=NO
+            COMPILER_INDEX_STORE_ENABLE=NO 2>&1 | tee xcodebuild.log || (echo "=== XCODEBUILD LOG ERRORS ===" && grep -i -E "error:|fatal:" xcodebuild.log | head -n 30 && tail -n 50 xcodebuild.log && exit 1)
+
+      - name: Upload Build Log if Failed
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: Xcode-Build-Log
+          path: ios/App/xcodebuild.log
+          retention-days: 7
 
       - name: Package IPA (Sideload-ready for AltStore / Sideloadly / TrollStore)
         run: |
