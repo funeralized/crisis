@@ -36,15 +36,18 @@ jobs:
       - name: Build Xcode Archive (No Code Signing required for Sideloading)
         run: |
           cd ios/App
+          xcodebuild -resolvePackageDependencies -project App.xcodeproj
           xcodebuild archive \
             -project App.xcodeproj \
             -scheme App \
             -configuration Release \
             -destination 'generic/platform=iOS' \
             -archivePath build/App.xcarchive \
+            -skipPackagePluginValidation \
             CODE_SIGNING_ALLOWED=NO \
             CODE_SIGNING_REQUIRED=NO \
-            CODE_SIGN_IDENTITY=""
+            CODE_SIGN_IDENTITY="" \
+            COMPILER_INDEX_STORE_ENABLE=NO
 
       - name: Package IPA (Sideload-ready for AltStore / Sideloadly / TrollStore)
         run: |
