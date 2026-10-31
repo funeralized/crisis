@@ -7,6 +7,9 @@ on:
     branches: [ main, master ]
   workflow_dispatch:
 
+permissions:
+  contents: write
+
 jobs:
   build-ipa:
     runs-on: macos-14
@@ -56,6 +59,16 @@ jobs:
           name: Xcode-Build-Log
           path: ios/App/xcodebuild.log
           retention-days: 7
+
+      - name: Push Build Log to Branch on Failure
+        if: failure()
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git checkout -B build-logs
+          git add -f ios/App/xcodebuild.log
+          git commit -m "chore: save xcodebuild.log for debugging"
+          git push -f origin build-logs
 
       - name: Package IPA (Sideload-ready for AltStore / Sideloadly / TrollStore)
         run: |
